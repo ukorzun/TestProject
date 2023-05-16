@@ -22,6 +22,7 @@ public class TestLogin extends BaseTest{
         loginPageSteps.enterPasswordFromConfProperties(ConfProperties.getProperty("password"));
         SlideShowsSteps slideShowsSteps = loginPageSteps.clickLoginInButton();
         assertThat(slideShowsSteps.getHeader(),containsString("Slideshows"));
+        System.out.println("YEEEEEEEEEEEEEE!!!!!!!!!!!!!!!");
 
     }
 
