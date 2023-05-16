@@ -20,7 +20,6 @@ public class BaseTest {
 
     @AfterClass
     public static void cleanUpEnvironment() {
-        driver = new ChromeDriver();
         driver.quit();
     }
 }

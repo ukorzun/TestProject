@@ -17,19 +17,19 @@ public class LoginPage extends BasePage{
     private WebElement linkSmartsLides;
 
 
-    @FindBy(xpath = "//input[@placeholder='Email']")
+    @FindBy(xpath = "//input[@autocomplete='email']")
     private WebElement inputEmail;
 
-    @FindBy(xpath = "//button[text()=' Continue ']")
+    @FindBy(xpath = "//*[contains(text(),'Continue')]")
     private WebElement continueButton;
 
 
 
 
-    @FindBy(xpath = "//input[@placeholder='Password']")
+    @FindBy(xpath = "//input[@autocomplete='current-password']")
     private WebElement inputPassword;
 
-    @FindBy(xpath = "//button[text()=' Log In ']")
+    @FindBy(xpath = "//div[contains(text(),'Log In')]")
     private WebElement logInButton;
 
     public WebElement getLoginButton() {
