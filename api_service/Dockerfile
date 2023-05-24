@@ -1,15 +1,8 @@
-FROM golang:1.16.5-alpine3.14 AS builder
+FROM openjdk:8-jre-alpine
 
-WORKDIR /usr/local/go/src/
+EXPOSE 8080
 
-ADD app/ /usr/local/go/src/
+COPY ./build/libs/my-app-1.0-SNAPSHOT.jar /usr/app/
+WORKDIR /usr/app
 
-RUN go clean --modcache
-RUN go build -mod=readonly -o app cmd/main/app.go
-
-FROM alpine:3.14
-
-COPY --from=builder /usr/local/go/src/app /
-COPY --from=builder /usr/local/go/src/config.yml /
-
-CMD ["/app"]
+ENTRYPOINT ["java", "-jar", "my-app-1.0-SNAPSHOT.jar"]
