@@ -66,4 +66,5 @@ export const Breadcrumbs = () => {
       </ul>
     </nav>
   )
+
 }
