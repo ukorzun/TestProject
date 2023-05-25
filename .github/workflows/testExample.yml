@@ -51,12 +51,8 @@ jobs:
           run: aws --version
         - name: Lets test some package1
           run: zip --version
-        - name: Cache Gradle packages
-          uses: actions/cache@v3
-          with:
-            path: |
-              ~/.gradle/caches
-              ~/.gradle/wrapper   
+        - name: Download all workflow run artifacts
+          uses: actions/download-artifact@v3      
   hello_world_job:
       runs-on: ubuntu-latest
       name: A job to say hello
