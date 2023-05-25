@@ -7,6 +7,14 @@ on:
  push:
    branches: 
      - master
+     
+ workflow_dispatch:
+ schedule:
+   - cron: '40 19 * * *' # once a day at 19:40 UTC / 11:40 PST
+
+permissions:
+  contents: read
+  issues: write     
    
 jobs:
   my_testing1:
@@ -61,3 +69,29 @@ jobs:
       # Use the output from the `hello` step
       - name: Get the output time
         run: echo "The time was ${{ steps.hello.outputs.time }}"
+  check_all_links:
+    name: Check all links
+    if: github.repository == 'github/docs-internal'
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.DOCUBOT_READORG_REPO_WORKFLOW_SCOPES }}
+      FIRST_RESPONDER_PROJECT: Docs content first responder
+      REPORT_AUTHOR: docubot
+      REPORT_LABEL: broken link report
+      REPORT_REPOSITORY: github/docs-content
+    steps:
+      - name: Check out repo's default branch
+        uses: actions/checkout@v3
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16.13.x
+          cache: npm
+      - name: npm ci
+        run: npm ci
+      - name: npm run build
+        run: npm run build
+      - name: Run script
+        run: |
+          script/check-english-links.js > broken_links.md        
+        
