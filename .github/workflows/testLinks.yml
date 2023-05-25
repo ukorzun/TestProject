@@ -2,6 +2,10 @@ name: Check all links
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - master
+  pull_request:
   schedule:
     - cron: '40 19 * * *' # once a day at 19:40 UTC / 11:40 PST
 
