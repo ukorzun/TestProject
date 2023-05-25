@@ -1,7 +1,6 @@
 name: Check Broken Docs Links in github/github
 
 on:
-  workflow_dispatch:
   push:
     branches:
       - master
