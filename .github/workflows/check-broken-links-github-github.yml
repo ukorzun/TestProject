@@ -1,86 +1,142 @@
-name: Check Broken Docs Links in github/github
+name: Test33
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
+  merge_group:
   pull_request:
-  schedule:
-    - cron: '20 16 * * 1' # Run every Monday at 16:20 UTC / 8:20 PST
 
 permissions:
   contents: read
+  pull-requests: read
+
+concurrency:
+  group: '${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}'
+  cancel-in-progress: true
+
 env:
-  FREEZE: ${{ secrets.FREEZE }}
+  ELASTICSEARCH_URL: http://localhost:9200/
 
 jobs:
-  check_github_github_links:
-    if: github.repository == 'github/docs-internal'
+  figureOutMatrix:
+    if: github.repository == 'github/docs-internal' || github.repository == 'github/docs'
     runs-on: ubuntu-latest
-    env:
-      # need to use a token from a user with access to github/github for this step
-      GITHUB_TOKEN: ${{ secrets.DOCS_BOT_FR }}
-      FIRST_RESPONDER_PROJECT: Docs content first responder
-      REPORT_AUTHOR: docubot
-      REPORT_LABEL: github github broken link report
-      REPORT_REPOSITORY: github/docs-content
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.result }}
     steps:
-      - if: ${{ env.FREEZE == 'true' }}
-        run: |
-          echo 'The repo is currently frozen! Exiting this workflow.'
-          exit 1 # prevents further steps from running
-
-      - name: Checkout
-        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
+      - uses: actions/github-script@98814c53be79b1d30f795b907e553d8679345975
+        id: set-matrix
         with:
-          persist-credentials: 'false'
+          script: |
+            return [
+              { name: 'content', path: 'tests/content', },
+              { name: 'automated-pipelines', path: 'src/automated-pipelines/tests', },
+              { name: 'events', path: 'src/events/tests', },
+              { name: 'ghes-releases', path: 'src/ghes-releases/tests', },
+              { name: 'graphql', path: 'src/graphql/tests', },
+              { name: 'rest', path: 'src/rest/tests', },
+              { name: 'webhooks', path: 'src/webhooks/tests', },
+              { name: 'linting', path: 'src/content-linter/tests', },
+              { name: 'meta', path: 'tests/meta', },
+              { name: 'routing', path: 'tests/routing', },
+              { name: 'rendering', path: 'tests/rendering', },
+              { name: 'rendering-fixtures', path: 'tests/rendering-fixtures', },
+              { name: 'search', path: 'src/search/tests', },
+              { name: 'pageinfo', path: 'src/pageinfo/tests', },
+              context.payload.repository.full_name === 'github/docs-internal' &&
+                { name: 'translations', path: 'tests/translations', },
+              { name: 'unit', path: 'tests/unit', },
+            ].filter(Boolean)
+
+  test:
+    name: ${{ matrix.name }}
+    needs: figureOutMatrix
+    runs-on: ${{ fromJSON('["ubuntu-latest", "ubuntu-20.04-xl"]')[github.repository == 'github/docs-internal'] }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.figureOutMatrix.outputs.matrix) }}
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
+
+      - uses: ./.github/actions/setup-elasticsearch
+        if: ${{ matrix.name == 'search' || matrix.name == 'translations' }}
 
       - uses: ./.github/actions/node-npm-setup
 
       - uses: ./.github/actions/get-docs-early-access
+        if: ${{ github.repository == 'github/docs-internal' }}
         with:
           token: ${{ secrets.DOCUBOT_REPO_PAT }}
 
-      - name: Build server
+      - name: Check the test fixture data (if applicable)
+        if: ${{ matrix.name == 'rendering-fixtures' }}
+        run: ./script/copy-fixture-data.js --check
+      - name: Check the test fixture content (if applicable)
+        if: ${{ matrix.name == 'rendering-fixtures' }}
+        env:
+          ROOT: tests/fixtures
+        run: |
+          ./script/update-internal-links.js --dry-run --check --strict \
+            tests/fixtures/content \
+            --exclude tests/fixtures/content/get-started/foo/typo-autotitling.md \
+            --exclude tests/fixtures/content/get-started/foo/anchor-autotitling.md
+          ./script/update-internal-links.js --dry-run --check --strict \
+            tests/fixtures/data
+
+      - name: Clone all translations
+        if: ${{ matrix.name == 'translations' }}
+        uses: ./.github/actions/clone-translations
+        with:
+          token: ${{ secrets.DOCUBOT_REPO_PAT }}
+
+      - name: Gather files changed
+        if: ${{ matrix.name == 'linting' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+          HEAD: ${{ github.event.pull_request.head.ref || github.event.merge_group.head_ref }}
+        run: |
+          if [ -n "$PR" ]
+          then
+            echo __ running gh pr diff __
+            DIFF=`gh pr diff $PR --name-only`
+          elif [ -n "$HEAD" ]
+          then
+            echo __ running git fetch main __
+            git fetch origin main --depth 1
+            echo __ running git diff __
+            DIFF=`git diff --name-only origin/main`
+          else
+            echo __ no head, empty diff __
+            DIFF=''
+          fi
+          echo __ DIFF found __
+          echo $DIFF
+          echo __ format, write to get_diff_files.txt __
+          echo $DIFF | tr '\n' ' ' > get_diff_files.txt
+
+      - name: Cache nextjs build
+        uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8
+        with:
+          path: .next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('package*.json') }}
+
+      - name: Run build script
         run: npm run build
 
-      - name: Start server in the background
+      - uses: ./.github/actions/warmup-remotejson-cache
+        if: ${{ matrix.name == 'routing' }}
+
+      - name: Index fixtures into the local Elasticsearch
+        if: ${{ matrix.name == 'search' || matrix.name == 'translations' }}
+        run: npm run index-test-fixtures
+
+      - name: Run tests
         env:
-          NODE_ENV: production
-          PORT: 4000
-          ENABLED_LANGUAGES: en
-        run: |
-
-          node server.js &
-          sleep 5
-          curl --retry-connrefused --retry 3 -I http://localhost:4000/
-
-      - name: Run broken github/github link check
-        run: |
-          script/check-github-github-links.js broken_github_github_links.md
-
-      - name: Get title for issue
-        if: ${{ hashFiles('broken_github_github_links.md') != '' && env.FREEZE != 'true' }}
-        id: check
-        run: echo "title=$(head -1 broken_github_github_links.md)" >> $GITHUB_OUTPUT
-
-      - name: Create issue from file
-        if: ${{ hashFiles('broken_github_github_links.md') != '' && env.FREEZE != 'true' }}
-        id: github-github-broken-link-report
-        uses: peter-evans/create-issue-from-file@433e51abf769039ee20ba1293a088ca19d573b7f
-        with:
-          token: ${{ env.GITHUB_TOKEN }}
-          title: ${{ steps.check.outputs.title }}
-          content-filepath: ./broken_github_github_links.md
-          repository: ${{ env.REPORT_REPOSITORY }}
-          labels: ${{ env.REPORT_LABEL }}
-
-      - name: Send Slack notification if workflow fails
-        uses: someimportantcompany/github-actions-slack-message@1d367080235edfa53df415bd8e0bbab480f29bad
-        if: ${{ failure() && env.FREEZE != 'true' }}
-        with:
-          channel: ${{ secrets.DOCS_ALERTS_SLACK_CHANNEL_ID }}
-          bot-token: ${{ secrets.SLACK_DOCS_BOT_TOKEN }}
-          color: failure
-          text: The last "Check Broken Docs Links in github/github" run for ${{github.repository}} failed. See https://github.com/${{github.repository}}/actions/workflows/check-broken-links-github-github.yml
+          DIFF_FILE: get_diff_files.txt
+          CHANGELOG_CACHE_FILE_PATH: tests/fixtures/changelog-feed.json
+          ENABLED_LANGUAGES: ${{ matrix.name == 'translations' && 'all' || '' }}
+          ROOT: ${{ (matrix.name == 'rendering-fixtures' || matrix.name == 'pageinfo') && 'tests/fixtures' || ''}}
+        run: npm test -- ${{ matrix.path }}/
