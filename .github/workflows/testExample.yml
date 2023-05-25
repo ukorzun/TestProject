@@ -56,7 +56,6 @@ jobs:
           with:
             path: |
               ~/.gradle/caches
-              ~/.gradle/wrapper
         - name: Download all workflow run artifacts
           uses: actions/download-artifact@v3      
   hello_world_job:
