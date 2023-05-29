@@ -1,4 +1,5 @@
 name: CI-CD-Pipeline-to_AWS
+
 env:
   EB_PACKAGE_S3_BUCKET_NAME: "adv-it-flask-application-package"
   EB_APPLICATION_NAME: "MyFlask"
@@ -15,7 +16,6 @@ on:
 jobs:
   ci-pipline:
     runs-on: ubuntu-latest
-    
     steps:
      - name: Run a one line script
      - uses: actions/checkout@v1
