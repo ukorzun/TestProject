@@ -14,13 +14,14 @@ on:
 
 
 jobs:
-  ci-pipline:
+  my_ci-pipline:
     runs-on: ubuntu-latest
+    
     steps:
      - name: Run a one line script
-     - uses: actions/checkout@v1
+       uses: actions/checkout@v1
      - name: Create zip deployment package 
-     - run: zip -r ${{ env.DEPLOY_PACKAGE_NAME }} ./ -x *.git*
+       run: zip -r ${{ env.DEPLOY_PACKAGE_NAME }} ./ -x *.git*
      
      
     
