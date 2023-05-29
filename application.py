@@ -1,36 +1,34 @@
-# application.py
-from flask import Flask, redirect, url_for, render_template, request, flash
+from flask import Flask
 
-import os
-from os.path import join, dirname
-from dotenv import load_dotenv
-import braintree
-from gateway import generate_client_token, transact, find_transaction
+# print a nice greeting.
+def say_hello(username = "World"):
+    return '<p>Hello %s!</p>\n' % username
 
-load_dotenv()
+# some bits of text for the page.
+header_text = '''
+    <html>\n<head> <title>EB Flask Test</title> </head>\n<body>'''
+instructions = '''
+    <p><em>Hint</em>: This is a RESTful web service! Append a username
+    to the URL (for example: <code>/Thelonious</code>) to say hello to
+    someone specific.</p>\n'''
+home_link = '<p><a href="/">Back</a></p>\n'
+footer_text = '</body>\n</html>'
 
-app = Flask(__name__)
-app.secret_key = os.environ.get('APP_SECRET_KEY')
+# EB looks for an 'application' callable by default.
+application = Flask(__name__)
 
-PORT = int(os.environ.get('PORT', 4567))
+# add a rule for the index page.
+application.add_url_rule('/', 'index', (lambda: header_text +
+                                                say_hello() + instructions + footer_text))
 
-TRANSACTION_SUCCESS_STATUSES = [
-    braintree.Transaction.Status.Authorized,
-    braintree.Transaction.Status.Authorizing,
-    braintree.Transaction.Status.Settled,
-    braintree.Transaction.Status.SettlementConfirmed,
-    braintree.Transaction.Status.SettlementPending,
-    braintree.Transaction.Status.Settling,
-    braintree.Transaction.Status.SubmittedForSettlement
-]
+# add a rule when the page is accessed with a name appended to the site
+# URL.
+application.add_url_rule('/<username>', 'hello', (lambda username:
+                                                  header_text + say_hello(username) + home_link + footer_text))
 
-@app.route('/', methods=['GET'])
-def index():
-    return redirect(url_for('new_checkout'))
-
-@app.route('/checkouts/new', methods=['GET'])
-def new_checkout():
-    client_token = generate_client_token()
-    return render_template('checkouts/new.html', client_token=client_token)
-
-@app.route('/checkouts/<transaction_id>', methods=['GET'])
+# run the app.
+if __name__ == "__main__":
+    # Setting debug to True enables debug output. This line should be
+    # removed before deploying a production app.
+    application.debug = True
+    application.run()
