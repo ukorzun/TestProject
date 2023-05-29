@@ -1,0 +1,23 @@
+name: CI-CD-Pipeline-to_AWS
+env:
+  EB_PACKAGE_S3_BUCKET_NAME: "adv-it-flask-application-package"
+  EB_APPLICATION_NAME: "MyFlask"
+  EB_ENVIROMENT_NAME: "My-flask-env"
+  DEPLOY_PACAGE_NAME: "flask_app_${{ github.sha }}.zip"
+
+on:
+ push:
+   branches:
+          - master
+
+
+jobs:
+  ci-pipline:
+    runs-on: ubuntu-latest
+    
+    steps:
+     - uses: actions/checkout@v1
+     - name: Run a one line script
+     
+     
+    
