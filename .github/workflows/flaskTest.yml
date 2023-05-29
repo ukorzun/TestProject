@@ -2,8 +2,8 @@ name: CI-CD-Pipeline-to_AWS
 
 env:
   EB_PACKAGE_S3_BUCKET_NAME: "test-v-package"
-  EB_APPLICATION_NAME: "MyFlask4"
-  EB_ENVIROMENT_NAME: "MyFlask4-env"
+  EB_APPLICATION_NAME: "MyFlask10"
+  EB_ENVIROMENT_NAME: "MyFlask10-env"
   DEPLOY_PACKAGE_NAME: "flask_app_${{ github.sha }}.zip"
   AWS_REGION_NAME: "eu-north-1"
 
