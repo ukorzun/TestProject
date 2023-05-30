@@ -1,12 +1,11 @@
 name: CI-CD-Pipeline-to_AWS
 
 env:
-  EB_PACKAGE_S3_BUCKET_NAME: "test-v-package"
-  EB_APPLICATION_NAME: "Myflask"
-  EB_ENVIROMENT_NAME: "MyFlask-env"
+  EB_PACKAGE_S3_BUCKET_NAME: "test-v-package1"
+  EB_APPLICATION_NAME: "Getting-started-app-env1"
+  EB_ENVIROMENT_NAME: "Getting-started-app-env1-env"
   DEPLOY_PACKAGE_NAME: "flask_app_${{ github.sha }}.zip"
-  AWS_REGION_NAME: "eu-north-1"
-
+  AWS_REGION_NAME: "us-west-2"
 
 on:
  push:
@@ -54,9 +53,9 @@ jobs:
          --application-name ${{ env.EB_APPLICATION_NAME }} \
          --source-bundle S3Bucket="${{ env.EB_PACKAGE_S3_BUCKET_NAME }}",S3Key="${{ env.DEPLOY_PACKAGE_NAME }}" \
          --version-label "Ver-${{ github.sha }}" \
-         --description "CommitSHA-${{ github.sha }}"
+         --description "CoimmitSHA-${{ github.sha }}"
      -  name: Deploy new ElasticBeansTalk Spplication version
-        run: aws elasticbeanstalk update-environment --environment-name ${{  env.EB_ENVIROMENT_NAME }}  --version-label "Ver-${{ github.sha }}"
+        run:  aws elasticbeanstalk update-environment --environment-name ${{  env.EB_ENVIROMENT_NAME }}  --version-label "Ver-${{ github.sha }}"
      -  name: Finished CD Pipline 
         run: echo "CD Pipline finished"
          
