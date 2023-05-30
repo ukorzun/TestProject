@@ -5,6 +5,7 @@
   "scripts": {
     "server": "webpack-dashboard -- webpack-dev-server --inline --port 8080",
     "webdriver-update": "webdriver-manager update",
+    "dev": "nodemon server.js"
   },
   "dependencies": {
     "@angular/common": "~2.2.0",
