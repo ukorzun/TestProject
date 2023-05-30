@@ -1,8 +1,9 @@
 name: Deploy-Android-TEST 
 
 on:
-  push:
-     master
+ push:
+   branches:
+          - master
     
 env:
   APP_CENTER_TOKEN: ${{ secrets.APP_CENTER_TOKEN_MYAPP_ANDROID_TEST  }}  
