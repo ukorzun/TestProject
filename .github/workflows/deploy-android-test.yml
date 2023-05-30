@@ -39,5 +39,5 @@ jobs:
           token: ${{ env.APP_CENTER_TOKEN }}
           group: ${{ env.TESTING_GROUP }}
           file: ${{ env.UPLOAD_FILE }}
-          notifyTesters: true
+          notifyTesters: false
           debug: false
