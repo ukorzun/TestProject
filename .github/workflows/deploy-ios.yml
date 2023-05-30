@@ -80,9 +80,8 @@ jobs:
       - name: Xcode Version
         run: /usr/bin/xcodebuild -version
         
-      - name: Create build folder
-        run: |
-        mkdir -p build && mkdir -p staging && mkdir -p prod
+#       - name: Create build folder
+#         run: | "mkdir -p build && mkdir -p staging && mkdir -p prod"
         
       - name: Build Archive
         run: |
