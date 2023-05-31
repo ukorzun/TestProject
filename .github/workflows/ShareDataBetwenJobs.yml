@@ -1,6 +1,5 @@
 name: Share data between jobs
 
-
 on: [push]
 
 jobs:
